@@ -1,7 +1,8 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const router = express.Router();
 const PDFDocument = require("pdfkit");
+const qrcode = require("qrcode");
+const router = express.Router();
 
 // Función para calcular los días transcurridos
 function calcularDiasTranscurridos(fechaInicio, fechaFin) {
@@ -45,6 +46,7 @@ router.post("/", (req, res) => {
 		parseFloat(montoBase),
 		diasTranscurridos
 	);
+	const arancel = montoTotal - parseFloat(montoBase);
 
 	let mensaje = "";
 
@@ -56,24 +58,45 @@ router.post("/", (req, res) => {
 		mensaje = "Pago en término";
 	}
 
-	// Crear un nuevo documento PDF
-	const doc = new PDFDocument();
+	// Contenido personalizado para la declaración jurada
+	const contenidoDeclaracion = `Esta es una declaracion jurada en la que dejo constancia que he pagado el monto total con sus intereses correspondientes de $${montoTotal} el día ${fechaInicio} y que la fecha de fin de pago es ${fechaFin}.`;
 
-	// Escribir el contenido del PDF
-	doc.fontSize(20).text("Resumen de pago", { align: "center" });
-	doc.moveDown();
-	doc.fontSize(14).text(`Fecha de inicio: ${fechaInicio}`);
-	doc.fontSize(14).text(`Fecha de fin: ${fechaFin}`);
-	doc.fontSize(14).text(`Días transcurridos: ${diasTranscurridos}`);
-	doc.fontSize(14).text(`Monto base: ${montoBase}`);
-	doc.fontSize(14).text(`Monto total: ${montoTotal}`);
-	doc.end();
+	// Generar el contenido para el código QR
+	const contenidoQR = `Constancia de que se pago $${montoTotal}`;
 
-	// Definir el nombre del archivo y enviarlo como respuesta para su descarga
-	const nombreArchivo = "resumen_pago.pdf";
-	res.setHeader("Content-disposition", `attachment; filename=${nombreArchivo}`);
-	res.setHeader("Content-type", "application/pdf");
-	doc.pipe(res);
+	// Generar el código QR
+	qrcode.toDataURL(contenidoQR, (err, url) => {
+		if (err) {
+			console.error("Error al generar el código QR:", err);
+			return;
+		}
+
+		// Crear un nuevo documento PDF
+		const doc = new PDFDocument();
+
+		// Escribir el contenido del PDF
+		doc.fontSize(20).text("Declaración Jurada", { align: "center" });
+		doc.moveDown();
+		doc.fontSize(14).text(contenidoDeclaracion);
+		doc.moveDown();
+		doc.fontSize(14).text(`Días transcurridos: ${diasTranscurridos}`);
+		doc.fontSize(14).text(`Monto base: $${montoBase}`);
+		doc.fontSize(14).text(`Monto total: $${montoTotal}`);
+		doc.moveDown();
+		doc.fontSize(14).text("Código QR de validación:");
+		// Insertar el código QR en el PDF
+		doc.image(url, { fit: [100, 100], align: "center", valign: "center" });
+
+		// Definir el nombre del archivo y enviarlo como respuesta para su descarga
+		const nombreArchivo = "declaracion_jurada.pdf";
+		res.setHeader(
+			"Content-disposition",
+			`attachment; filename=${nombreArchivo}`
+		);
+		res.setHeader("Content-type", "application/pdf");
+		doc.pipe(res);
+		doc.end();
+	});
 });
 
 //////////////////////////////////////

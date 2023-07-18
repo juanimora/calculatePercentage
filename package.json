@@ -13,6 +13,7 @@
     "express": "^4.18.2",
     "moment": "^2.29.4",
     "pdfkit": "^0.13.0",
+    "qrcode": "^1.5.3",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.0"
   }
