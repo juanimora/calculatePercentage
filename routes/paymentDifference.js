@@ -56,7 +56,24 @@ router.post("/", (req, res) => {
 		mensaje = "Pago en término";
 	}
 
-	res.json({ fechaInicio, fechaFin, diasTranscurridos, montoTotal, mensaje });
+	// Crear un nuevo documento PDF
+	const doc = new PDFDocument();
+
+	// Escribir el contenido del PDF
+	doc.fontSize(20).text("Resumen de pago", { align: "center" });
+	doc.moveDown();
+	doc.fontSize(14).text(`Fecha de inicio: ${fechaInicio}`);
+	doc.fontSize(14).text(`Fecha de fin: ${fechaFin}`);
+	doc.fontSize(14).text(`Días transcurridos: ${diasTranscurridos}`);
+	doc.fontSize(14).text(`Monto base: ${montoBase}`);
+	doc.fontSize(14).text(`Monto total: ${montoTotal}`);
+	doc.end();
+
+	// Definir el nombre del archivo y enviarlo como respuesta para su descarga
+	const nombreArchivo = "resumen_pago.pdf";
+	res.setHeader("Content-disposition", `attachment; filename=${nombreArchivo}`);
+	res.setHeader("Content-type", "application/pdf");
+	doc.pipe(res);
 });
 
 //////////////////////////////////////
